@@ -22,9 +22,40 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         endDate: initialData?.endDate || "",
         remarks: initialData?.remarks || "",
         frequency: initialData?.frequency || "",
+        frequencyOption: initialData?.frequencyOption || [],
         isWebAppFinished: initialData?.isWebAppFinished || false,
         isFieldWorkStarted: initialData?.isFieldWorkStarted || false,
+        team: initialData?.team || "",
+        notificationEnabled: initialData?.notificationEnabled || false,
     });
+
+    useEffect(() => {
+        if (initialData) {
+            let freqOption: string[] = [];
+            if (Array.isArray(initialData.frequencyOption)) {
+                freqOption = initialData.frequencyOption;
+            } else if (typeof initialData.frequencyOption === 'string' && initialData.frequencyOption) {
+                freqOption = [initialData.frequencyOption];
+            }
+
+            setFormData({
+                projectNumber: initialData.projectNumber || "",
+                title: initialData.title || "",
+                webAppPeriodStart: initialData.webAppPeriodStart || "",
+                webAppPeriodEnd: initialData.webAppPeriodEnd || "",
+                fieldWorkPeriodStart: initialData.fieldWorkPeriodStart || "",
+                fieldWorkPeriodEnd: initialData.fieldWorkPeriodEnd || "",
+                endDate: initialData.endDate || "",
+                remarks: initialData.remarks || "",
+                frequency: initialData.frequency || "",
+                frequencyOption: freqOption,
+                isWebAppFinished: initialData.isWebAppFinished || false,
+                isFieldWorkStarted: initialData.isFieldWorkStarted || false,
+                team: initialData.team || "",
+                notificationEnabled: initialData.notificationEnabled || false,
+            });
+        }
+    }, [initialData]);
 
     const handleChange = (
                 e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -32,6 +63,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 const { name, value } = e.target;
                 setFormData((prev) => {
                     const newData = { ...prev, [name]: value };
+                    // 주기가 변경되면 세부 옵션 초기화
+                    if (name === 'frequency') {
+                        newData.frequencyOption = [];
+                    }
                     // 실사 종료일이 변경되면 최종 종료일도 동일하게 업데이트 (사용자가 이후에 수정 가능)
                     if (name === "fieldWorkPeriodEnd") {
                         newData.endDate = value;
@@ -39,6 +74,18 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     return newData;
                 });
             };
+
+    const toggleFrequencyOption = (option: string) => {
+        setFormData(prev => {
+            const current = prev.frequencyOption || [];
+            if (current.includes(option)) {
+                return { ...prev, frequencyOption: current.filter(o => o !== option) };
+            } else {
+                return { ...prev, frequencyOption: [...current, option] };
+            }
+        });
+    };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -75,6 +122,27 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             placeholder="프로젝트명을 입력하세요"
           />
         </div>
+      </div>
+      
+      <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">팀 (선택)</label>
+          <select
+              name="team"
+              value={formData.team}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md"
+          >
+              <option value="">선택 안함</option>
+              <option value="1팀">1팀</option>
+              <option value="2팀">2팀</option>
+              <option value="3팀">3팀</option>
+              <option value="4팀">4팀</option>
+              <option value="5팀">5팀</option>
+              <option value="6팀">6팀</option>
+              <option value="7팀">7팀</option>
+              <option value="연구소">연구소</option>
+              <option value="데산실">데산실</option>
+          </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -175,30 +243,52 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
                       <label className="block text-sm font-medium text-gray-700 mb-1">주기 (선택)</label>
 
-                      <select
-
-                          name="frequency"
-
-                          value={formData.frequency}
-
-                          onChange={handleChange}
-
-                          className="w-full p-2 border border-gray-300 rounded-md"
-
-                      >
-
-                          <option value="">설정 안함</option>
-
-                          <option value="매일">매일</option>
-
-                          <option value="매주">매주</option>
-
-                          <option value="매월">매월</option>
-
-                          <option value="매년">매년</option>
-
-                      </select>
-
+                      <div className="space-y-2">
+                        <select
+                            name="frequency"
+                            value={formData.frequency}
+                            onChange={handleChange}
+                            className="w-full p-2 border border-gray-300 rounded-md"
+                        >
+                            <option value="">설정 안함</option>
+                            <option value="매일">매일</option>
+                            <option value="매주">매주</option>
+                            <option value="매월">매월</option>
+                            <option value="매년">매년</option>
+                        </select>
+                        {formData.frequency === '매주' && (
+                             <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md border border-gray-200">
+                                {['월', '화', '수', '목', '금', '토', '일'].map(d => (
+                                    <button
+                                        key={d}
+                                        type="button"
+                                        onClick={() => toggleFrequencyOption(d)}
+                                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                                            formData.frequencyOption?.includes(d)
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-white text-gray-600 border border-gray-300 hover:border-blue-400'
+                                        }`}
+                                    >
+                                        {d}
+                                    </button>
+                                ))}
+                             </div>
+                        )}
+                        {formData.frequency === '매월' && (
+                             <select
+                                name="frequencyOption"
+                                value={Array.isArray(formData.frequencyOption) && formData.frequencyOption.length > 0 ? formData.frequencyOption[0] : ""}
+                                onChange={(e) => setFormData(prev => ({ ...prev, frequencyOption: [e.target.value] }))}
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                             >
+                                <option value="">날짜 선택</option>
+                                {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                                    <option key={d} value={d.toString()}>{d}일</option>
+                                ))}
+                                <option value="말일">말일</option>
+                             </select>
+                        )}
+                      </div>
                   </div>
 
       
@@ -245,6 +335,28 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             className="ml-2 block text-sm text-gray-900"
           >
             실사 시작 여부
+          </label>
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="notificationEnabled"
+            name="notificationEnabled"
+            checked={formData.notificationEnabled}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                notificationEnabled: e.target.checked,
+              }))
+            }
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label
+            htmlFor="notificationEnabled"
+            className="ml-2 block text-sm text-gray-900"
+          >
+            알림 설정 (오후 5시)
           </label>
         </div>
       </div>

@@ -22,31 +22,50 @@ import {
   Circle,
   CheckSquare,
   Star,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { Project, Todo } from "../types";
 
 interface CalendarProps {
   projects: Project[];
+  finishedProjects: Project[];
   todos: Todo[];
   onEditProject: (project: Project) => void;
   onFinishProject: (project: Project) => void;
   onCreateProject: (date: Date) => void;
   onCreateTodo: () => void;
   onDateSelect: (date: Date) => void;
+  onEditTodo: (todo: Todo) => void;
+  onDeleteTodo: (todoId: string) => void;
+  onToggleTodoFinished: (todo: Todo) => void;
   selectedDate: Date | null;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
   projects,
+  finishedProjects,
   todos,
   onEditProject,
   onFinishProject,
   onCreateProject,
   onCreateTodo,
   onDateSelect,
+  onEditTodo,
+  onDeleteTodo,
+  onToggleTodoFinished,
   selectedDate,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const today = new Date();
+
+  const displayProjects = useMemo(() => {
+    // Only show finished projects if we are in the current month
+    if (isSameMonth(currentMonth, today)) {
+      return [...projects, ...finishedProjects];
+    }
+    return projects;
+  }, [currentMonth, projects, finishedProjects, today]);
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -59,7 +78,6 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const today = new Date();
 
   // Calculate monthly stats
   const monthlyStats = useMemo(() => {
@@ -69,8 +87,8 @@ const Calendar: React.FC<CalendarProps> = ({
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
 
-    // Projects: If any critical date is in this month
-    projCount = projects.filter((p) => {
+    // Projects: Use displayProjects which is already filtered
+    projCount = displayProjects.filter((p) => {
       const d1 = parseISO(p.webAppPeriodStart);
       const d2 = parseISO(p.endDate);
       return (
@@ -88,11 +106,11 @@ const Calendar: React.FC<CalendarProps> = ({
     }).length;
 
     return { projCount, todoCount };
-  }, [projects, todos, currentMonth]);
+  }, [displayProjects, todos, currentMonth]);
 
   const getProjectsForDay = (date: Date) => {
-    return projects.filter((project) => {
-      const daysToCheck = [project.webAppPeriodStart, project.fieldWorkPeriodStart];
+    return displayProjects.filter((project) => {
+      const daysToCheck = [project.webAppPeriodStart, project.fieldWorkPeriodStart, project.endDate];
       return daysToCheck.some((d) => d && isSameDay(parseISO(d), date));
     });
   };
@@ -241,23 +259,33 @@ const Calendar: React.FC<CalendarProps> = ({
                     parseISO(project.fieldWorkPeriodStart),
                     day
                   );
+                   const isEndDate = project.endDate && isSameDay(parseISO(project.endDate), day);
 
                   let badgeColor = "bg-gray-100 text-gray-700 border-gray-200";
+                  let cursorStyle = "cursor-pointer hover:opacity-80";
+
                   if (project.status === "finished") {
-                    badgeColor =
-                      "bg-gray-100 text-gray-400 line-through border-gray-200";
+                    badgeColor = "bg-gray-200 text-gray-500 border-gray-300";
+                    cursorStyle = "cursor-default opacity-60";
                   } else if (isFieldWorkStart) {
-                    badgeColor =
-                      "bg-indigo-100 text-indigo-800 border-indigo-200 border";
+                    badgeColor = "bg-amber-100 text-amber-800 border-amber-200";
                   } else if (isWebAppStart) {
-                    badgeColor =
-                      "bg-blue-100 text-blue-800 border-blue-200 border";
+                    badgeColor = "bg-cyan-100 text-cyan-800 border-cyan-200";
+                  } else if (isEndDate) {
+                     badgeColor = "bg-red-100 text-red-800 border-red-200";
                   }
+
 
                   return (
                     <div
                       key={project.id}
-                      className={`text-xs p-1.5 rounded-md border shadow-sm cursor-pointer hover:opacity-80 ${badgeColor} flex flex-col gap-1`}
+                      onClick={(e) => {
+                        if (project.status !== 'finished') {
+                          e.stopPropagation();
+                          onEditProject(project);
+                        }
+                      }}
+                      className={`text-xs p-1.5 rounded-md border shadow-sm ${badgeColor} ${cursorStyle} flex flex-col gap-1`}
                       title={project.title}
                     >
                       <div className="font-semibold truncate">
@@ -281,7 +309,7 @@ const Calendar: React.FC<CalendarProps> = ({
                         <div
                           className={`flex items-center space-x-0.5 ${
                             project.isFieldWorkStarted
-                              ? "text-blue-600"
+                              ? "text-amber-600"
                               : "text-gray-400"
                           }`}
                         >
@@ -293,13 +321,18 @@ const Calendar: React.FC<CalendarProps> = ({
                           <span className="text-[10px]">실사</span>
                         </div>
                       </div>
-                      {isFieldWorkStart && (
-                        <div className="text-[9px] font-bold text-indigo-700 mt-0.5">
+                       {isEndDate && (
+                        <div className="text-[9px] font-bold text-red-700 mt-0.5">
+                          종료일
+                        </div>
+                      )}
+                      {isFieldWorkStart && !isEndDate && (
+                        <div className="text-[9px] font-bold text-amber-700 mt-0.5">
                           실사시작
                         </div>
                       )}
-                      {isWebAppStart && (
-                        <div className="text-[9px] text-blue-700 mt-0.5">
+                      {isWebAppStart && !isFieldWorkStart && !isEndDate &&(
+                        <div className="text-[9px] text-cyan-700 mt-0.5">
                           웹시작
                         </div>
                       )}
@@ -312,13 +345,16 @@ const Calendar: React.FC<CalendarProps> = ({
                                         return (
                                             <div
                                                 key={todo.id}
-                                                className={`text-xs p-1.5 rounded-md border shadow-sm cursor-pointer hover:opacity-80 flex flex-col gap-0.5
+                                                className={`text-xs p-1.5 rounded-md border shadow-sm flex flex-col gap-0.5 group/todo relative
                                                     ${todo.isFinished ? 'bg-gray-100 text-gray-400 line-through border-gray-200' : 
                                                       'bg-green-50 text-gray-800 border-green-200'}
                                                 `}
                                                 title={todo.content || todo.title}
                                             >
-                                                <div className="flex items-center gap-1">
+                                                <div 
+                                                    className="flex items-center gap-1 cursor-pointer"
+                                                    onClick={(e) => { e.stopPropagation(); onToggleTodoFinished(todo); }}
+                                                >
                                                     <CheckSquare size={10} className={`shrink-0 ${todo.isFinished ? 'text-gray-400' : 'text-green-600'}`} />
                                                     <div className="truncate font-medium">{todo.title}</div>
                                                 </div>
@@ -329,9 +365,18 @@ const Calendar: React.FC<CalendarProps> = ({
                                                         ))}
                                                     </div>
                                                 )}
+                                                <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover/todo:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => { e.stopPropagation(); onEditTodo(todo); }} className="p-0.5 bg-gray-200 rounded text-gray-600 hover:bg-blue-100 hover:text-blue-600">
+                                                        <Edit2 size={10} />
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); onDeleteTodo(todo.id); }} className="p-0.5 bg-gray-200 rounded text-gray-600 hover:bg-red-100 hover:text-red-600">
+                                                        <Trash2 size={10} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         );
-                                    })}              </div>
+                                    })}
+                              </div>
             </div>
           );
         })}
@@ -341,3 +386,4 @@ const Calendar: React.FC<CalendarProps> = ({
 };
 
 export default Calendar;
+

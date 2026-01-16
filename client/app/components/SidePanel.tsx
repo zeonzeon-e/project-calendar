@@ -83,9 +83,16 @@ const SidePanel: React.FC<SidePanelProps> = ({
                             <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
                                 <div className="flex justify-between items-start mb-2">
                                     <h3 className="font-semibold text-gray-800 truncate pr-2">{project.title}</h3>
-                                    <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                        {project.projectNumber}
-                                    </span>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                            {project.projectNumber}
+                                        </span>
+                                        {project.team && (
+                                            <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                                {project.team}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 
                                 <div className="text-sm text-gray-600 space-y-2 mb-3">
@@ -154,20 +161,34 @@ const SidePanel: React.FC<SidePanelProps> = ({
                     <div className="space-y-3">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">To-Dos</h3>
                         {dayTodos.map(todo => (
-                            <div key={todo.id} className={`border rounded-lg p-3 hover:shadow-sm transition-shadow bg-white ${todo.isFinished ? 'opacity-60 bg-gray-50' : ''}`}>
+                            <div 
+                                key={todo.id} 
+                                onClick={() => onToggleTodoFinished(todo)}
+                                className={`border rounded-lg p-3 hover:shadow-sm transition-shadow bg-white cursor-pointer ${todo.isFinished ? 'opacity-60 bg-gray-50' : ''}`}
+                            >
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-3">
                                         <button 
-                                            onClick={() => onToggleTodoFinished(todo)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onToggleTodoFinished(todo);
+                                            }}
                                             className={`mt-1 ${todo.isFinished ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}
                                         >
                                             {todo.isFinished ? <CheckCircle size={20} /> : <Circle size={20} />}
                                         </button>
                                         <div>
-                                            <div className="flex items-center space-x-1 mb-1">
-                                                {[1, 2, 3, 4, 5].map((s) => (
-                                                    <Star key={s} size={10} className={s <= todo.importance ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
-                                                ))}
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <div className="flex items-center space-x-1">
+                                                    {[1, 2, 3, 4, 5].map((s) => (
+                                                        <Star key={s} size={10} className={s <= todo.importance ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
+                                                    ))}
+                                                </div>
+                                                {todo.category && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-100 font-medium">
+                                                        {todo.category}
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className={`font-semibold text-gray-800 ${todo.isFinished ? 'line-through text-gray-500' : ''}`}>
                                                 {todo.title}
@@ -191,15 +212,21 @@ const SidePanel: React.FC<SidePanelProps> = ({
                                     </div>
                                     <div className="flex gap-1">
                                         <button 
-                                            onClick={() => onEditTodo(todo)}
-                                            className="text-gray-400 hover:text-blue-500 transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEditTodo(todo);
+                                            }}
+                                            className="text-gray-400 hover:text-blue-500 transition-colors p-1"
                                             title="수정"
                                         >
                                             <Edit2 size={16} />
                                         </button>
                                         <button 
-                                            onClick={() => onDeleteTodo(todo.id)}
-                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteTodo(todo.id);
+                                            }}
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                             title="삭제"
                                         >
                                             <Trash2 size={16} />

@@ -13,7 +13,12 @@ export interface Project {
     status: 'active' | 'finished';
     finishedAt?: string;
     frequency?: string;
+    frequencyOption?: string[];
+    recurrenceExcludedDates?: string[];
+    recurrenceEndDate?: string;
     parentId?: string;
+    team?: string;
+    notificationEnabled?: boolean;
 }
 
 export interface Todo {
@@ -23,7 +28,13 @@ export interface Todo {
     content?: string;
     deadline?: string;
     frequency?: string;
+    frequencyOption?: string[];
+    recurrenceExcludedDates?: string[];
+    recurrenceEndDate?: string;
     date: string;
     isFinished: boolean;
+    finishedAt?: string;
     parentId?: string;
+    category?: string;
+    notificationEnabled?: boolean;
 }

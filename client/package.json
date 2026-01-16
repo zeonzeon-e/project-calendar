@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack -p 3002",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3002",
     "lint": "next lint",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d out"
@@ -30,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "gh-pages": "^6.3.0",
+    "pm2": "^6.0.14",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
