@@ -11,7 +11,7 @@ import Modal from "./components/Modal";
 import ProjectForm from "./components/ProjectForm";
 import TodoForm from "./components/TodoForm";
 import { format } from "date-fns";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Archive } from "lucide-react";
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -301,6 +301,13 @@ export default function Home() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+            <Link 
+              href="/finished-projects" 
+              className="flex items-center gap-1 px-3 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+            >
+              <Archive size={16} />
+              <span className="hidden sm:inline">완료 목록</span>
+            </Link>
             <Link 
               href="/api-docs" 
               className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
